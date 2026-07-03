@@ -3,9 +3,11 @@ watermark_script.exe
 *.exe
 *.zip
 
-# Local User Assets & Photo Folders (keeps raw and processed photos private)
-raw_photos/
-watermarked_photos/
+# Local User Assets & Photo Folders (keeps folders but ignores photos)
+raw_photos/*
+!raw_photos/.gitkeep
+watermarked_photos/*
+!watermarked_photos/.gitkeep
 my_logo.png
 
 # PyInstaller Build Artifacts
