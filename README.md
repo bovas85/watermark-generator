@@ -45,7 +45,7 @@ To get started, **both Windows and macOS users should download the full reposito
 ### Step 2: Setup the Executable/Launcher
 
 #### For Windows Users
-1. Go to the **Releases** section on the right-hand side of this GitHub repository page.
+1. Go to the [GitHub Releases page](https://github.com/bovas85/watermark-generator/releases/).
 2. Download the latest `watermark_script.exe`.
 3. Move `watermark_script.exe` into the extracted project folder, placing it directly next to the `raw_photos` and `watermarked_photos` folders.
 
