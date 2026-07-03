@@ -33,18 +33,24 @@ Watermark Generator/
 
 ## Installation & Download
 
-### Windows Users (Pre-compiled Executable)
+To get started, **both Windows and macOS users should download the full repository folder** to ensure you have the complete file structure (including the `raw_photos` and `watermarked_photos` directories):
+
+### Step 1: Download the Project Folder
+* **Option A (ZIP file):** Click the green **Code** button at the top of this GitHub page, select **Download ZIP**, and extract the ZIP file onto your computer (e.g., your Desktop).
+* **Option B (Git):** Clone this repository using Git:
+  ```bash
+  git clone https://github.com/bovas85/watermark-generator.git
+  ```
+
+### Step 2: Setup the Executable/Launcher
+
+#### For Windows Users
 1. Go to the **Releases** section on the right-hand side of this GitHub repository page.
 2. Download the latest `watermark_script.exe`.
-3. Create a folder (e.g., `Watermark Generator/`) on your computer and place the `.exe` inside it.
+3. Move `watermark_script.exe` into the extracted project folder, placing it directly next to the `raw_photos` and `watermarked_photos` folders.
 
-### macOS Users (Command Script)
-1. Download the ZIP file of this repository (click the green **Code** button and select **Download ZIP**) or clone it:
-   ```bash
-   git clone https://github.com/bovas85/watermark-generator.git
-   ```
-2. Extract the files into a folder (e.g., `Watermark Generator/`) on your computer.
-3. You will run the tool using the included `run.command` file (see macOS instructions below).
+#### For macOS Users
+You do not need to download any separate executable. The launcher is already included in your downloaded folder as `run.command` (see the macOS instructions below).
 
 ---
 
