@@ -86,7 +86,15 @@ def process_images():
         text_watermark = input("Enter the text watermark to use (e.g., '@MyBrand' or press Enter for default '© PROTECTED'): ").strip()
         if not text_watermark:
             text_watermark = "© PROTECTED"
-        print(f"Using text watermark: '{text_watermark}'\n")
+        print(f"Using text watermark: '{text_watermark}'")
+
+    # Prompt user for EXIF metadata preservation choice
+    preserve_input = input("\nPreserve EXIF metadata (GPS location, camera details, settings) in output JPEGs? (y/N): ").strip().lower()
+    preserve_exif = preserve_input == 'y'
+    if preserve_exif:
+        print("-> EXIF metadata will be preserved where possible.\n")
+    else:
+        print("-> EXIF metadata will be completely stripped for privacy.\n")
 
     # Find images
     valid_extensions = ('.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tiff')
@@ -127,7 +135,18 @@ def process_images():
         output_path = os.path.join(output_dir, output_filename)
 
         try:
-            # 1. Open / Decode the image
+            # 1. Extract EXIF data if requested
+            exif_bytes = None
+            if preserve_exif:
+                try:
+                    # Pillow TIFF parser handles EXIF metadata blocks on TIFF-based files (ARW, CR2, NEF, DNG, JPG)
+                    with Image.open(input_path) as temp_img:
+                        exif_bytes = temp_img.info.get('exif')
+                except Exception as e:
+                    # Fail silently for files like CR3 that don't support TIFF headers directly in Pillow
+                    pass
+
+            # 2. Open / Decode the image
             if is_raw:
                 print(f"Developing RAW: {filename}...")
                 with rawpy.imread(input_path) as raw:
@@ -184,7 +203,7 @@ def process_images():
                 if not font:
                     font = ImageFont.load_default()
 
-                # Calculate position (Bottom Right)
+                # Calculate position
                 try:
                     bbox = draw.textbbox((0, 0), text_watermark, font=font)
                     text_w = bbox[2] - bbox[0]
@@ -204,13 +223,19 @@ def process_images():
             # Merge watermark layer with background image
             final_img = Image.alpha_composite(working_img, watermark_layer)
 
-            # 3. Convert back to RGB and save (this strips EXIF data automatically since we don't pass exif parameter)
+            # 3. Convert back to RGB and save
+            save_args = {}
+            if preserve_exif and exif_bytes:
+                save_args["exif"] = exif_bytes
+
             if output_filename.lower().endswith(('.jpg', '.jpeg')):
-                final_img.convert("RGB").save(output_path, "JPEG", quality=90)
+                save_args["quality"] = 90
+                final_img.convert("RGB").save(output_path, "JPEG", **save_args)
             elif output_filename.lower().endswith('.webp'):
-                final_img.convert("RGB").save(output_path, "WEBP", quality=90)
+                save_args["quality"] = 90
+                final_img.convert("RGB").save(output_path, "WEBP", **save_args)
             else:
-                final_img.save(output_path)
+                final_img.save(output_path, **save_args)
 
             print(f"Processed & Protected: {filename} -> {output_path}")
             processed_count += 1
@@ -219,7 +244,10 @@ def process_images():
 
     print(f"\nSuccess! Processed {processed_count} image(s).")
     print(f"Protected images saved in: '{output_dir}'")
-    print("All location data and EXIF metadata have been stripped.")
+    if preserve_exif:
+        print("EXIF metadata has been preserved in the output images.")
+    else:
+        print("All location data and EXIF metadata have been stripped.")
 
 if __name__ == "__main__":
     try:
