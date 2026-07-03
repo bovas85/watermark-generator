@@ -31,6 +31,23 @@ Watermark Generator/
 
 ---
 
+## Installation & Download
+
+### Windows Users (Pre-compiled Executable)
+1. Go to the **Releases** section on the right-hand side of this GitHub repository page.
+2. Download the latest `watermark_script.exe`.
+3. Create a folder (e.g., `Watermark Generator/`) on your computer and place the `.exe` inside it.
+
+### macOS Users (Command Script)
+1. Download the ZIP file of this repository (click the green **Code** button and select **Download ZIP**) or clone it:
+   ```bash
+   git clone https://github.com/bovas85/watermark-generator.git
+   ```
+2. Extract the files into a folder (e.g., `Watermark Generator/`) on your computer.
+3. You will run the tool using the included `run.command` file (see macOS instructions below).
+
+---
+
 ## How to Use
 
 ### 💻 For Windows Users
