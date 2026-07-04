@@ -7,6 +7,33 @@ on:
     branches: [main]
 
 jobs:
+  lint-commits:
+    name: Lint Commit Messages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify Conventional Commit Prefix
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          
+          # Skip merge/revert/actions bot commits
+          if echo "$COMMIT_MSG" | grep -qE "^(Merge branch|Merge pull request|Revert |github-actions)"; then
+            echo "Merge/Revert/Actions bot commit detected. Skipping check."
+            exit 0
+          fi
+          
+          if ! echo "$COMMIT_MSG" | grep -qE "^(fix|feat|breaking|major)(\(.*\))?!?: .+$"; then
+            echo "❌ ERROR: Commit message does not follow conventional commits!"
+            echo "Your commit message was: '$COMMIT_MSG'"
+            echo "It must start with one of: fix, feat, breaking, major"
+            exit 1
+          fi
+          echo "Commit message is valid."
+
   test:
     name: Run Tests
     runs-on: ${{ matrix.os }}
@@ -35,7 +62,7 @@ jobs:
 
   auto-tag:
     name: Auto-Tag Version
-    needs: test
+    needs: [test, lint-commits]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
@@ -62,16 +89,24 @@ jobs:
           VERSION="${LATEST_TAG#v}"
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
 
-          # Check commit messages since last tag for bump keywords
-          if git log "${LATEST_TAG}..HEAD" --pretty=%B 2>/dev/null | grep -qi '#major'; then
+          # Get commit logs since last tag
+          COMMITS=$(git log "${LATEST_TAG}..HEAD" --pretty=%s 2>/dev/null)
+          echo "Commits since last tag:"
+          echo "$COMMITS"
+
+          # Determine bump type based on conventional commit prefixes
+          # breaking or major prefix (with or without scope) or presence of '!'
+          if echo "$COMMITS" | grep -qiE "^(major|breaking)(\(.*\))?!?:|!"; then
             MAJOR=$((MAJOR + 1))
             MINOR=0
             PATCH=0
             echo "Bump type: MAJOR"
-          elif git log "${LATEST_TAG}..HEAD" --pretty=%B 2>/dev/null | grep -qi '#minor'; then
+          # feat prefix
+          elif echo "$COMMITS" | grep -qiE "^feat(\(.*\))?!?:"; then
             MINOR=$((MINOR + 1))
             PATCH=0
             echo "Bump type: MINOR"
+          # fix prefix
           else
             PATCH=$((PATCH + 1))
             echo "Bump type: PATCH"

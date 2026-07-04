@@ -124,6 +124,33 @@ After building, look in the newly created `dist/` directory for your compiled bi
 
 ---
 
+## Development & Contributing
+
+### 🧪 Running Unit Tests
+You can run the test suite locally to verify changes before pushing:
+```bash
+python -m unittest tests/test_watermark.py
+```
+
+### ✍️ Conventional Commits & Auto-Versioning
+This repository enforces **Conventional Commits** for clear history and automated release versioning. Every commit message must start with one of these prefixes:
+
+*   **`fix:`** or **`fix(scope):`** -> Indicates a bug fix (triggers a **PATCH** version bump, e.g. `v1.0.4` → `v1.0.5`)
+*   **`feat:`** or **`feat(scope):`** -> Indicates a new feature (triggers a **MINOR** version bump, e.g. `v1.0.5` → `v1.1.0`)
+*   **`breaking:`** or **`major:`** -> Indicates a breaking change (triggers a **MAJOR** version bump, e.g. `v1.1.0` → `v2.0.0`)
+
+Example commit messages:
+*   `feat: add parallel workers`
+*   `fix(logo): clamp logo size proportionally`
+*   `breaking: rename cli options`
+
+### 🪝 Git Hooks
+To ensure high quality, the local repository uses Git hooks:
+*   **`commit-msg`**: Prevents commits if the message does not start with `fix`, `feat`, `breaking`, or `major`.
+*   **`pre-push`**: Automatically runs unit tests locally before push. If any test fails, the push is aborted.
+
+---
+
 ## License
 
 This project is open-source and available under the [MIT License](LICENSE).
