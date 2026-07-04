@@ -49,6 +49,39 @@ class TestWatermarkGenerator(unittest.TestCase):
         watermarked = watermark_script.apply_watermark(img, logo=logo)
         self.assertEqual(watermarked.mode, "RGBA")
 
+    @patch("sys.argv", ["watermark_script.py", "--no-interactive", "--logo", os.path.join(os.path.dirname(__file__), "resources", "test-logo.png")])
+    def test_cli_with_logo_file(self):
+        """Test running the CLI non-interactively with a logo PNG file."""
+        shutil.copy2(self.test_image_src, self.sandbox_raw_dir)
+        
+        config = watermark_script.build_config()
+        self.assertFalse(config.interactive)
+        self.assertEqual(config.logo, os.path.join(self.resource_dir, "test-logo.png"))
+        
+        watermark_script.process_images(config)
+        
+        output_file = os.path.join(self.sandbox_output_dir, "test-image.png")
+        self.assertTrue(os.path.exists(output_file))
+        
+        with Image.open(output_file) as out_img:
+            self.assertEqual(out_img.size, (651, 392))
+
+    @patch("sys.argv", ["watermark_script.py", "--no-interactive"])
+    def test_cli_automatic_logo_detection(self):
+        """Test that the CLI automatically detects and uses a logo named 'my_logo.png' in the working directory."""
+        # Copy test logo to sandbox base dir as 'my_logo.png'
+        sandbox_logo_path = os.path.join(self.base_dir, "my_logo.png")
+        shutil.copy2(os.path.join(self.resource_dir, "test-logo.png"), sandbox_logo_path)
+        
+        # Copy test-image.png to sandbox raw_photos
+        shutil.copy2(self.test_image_src, self.sandbox_raw_dir)
+        
+        config = watermark_script.build_config()
+        watermark_script.process_images(config)
+        
+        output_file = os.path.join(self.sandbox_output_dir, "test-image.png")
+        self.assertTrue(os.path.exists(output_file))
+
     @patch("sys.argv", ["watermark_script.py", "--no-interactive", "--text", "@test watermark"])
     def test_cli_non_interactive(self):
         """Test running the CLI non-interactively with a text watermark on test-image.png."""

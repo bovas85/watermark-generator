@@ -372,6 +372,8 @@ def process_images(config):
         print("All location data and EXIF metadata have been stripped.")
 
 if __name__ == "__main__":
+    import multiprocessing
+    multiprocessing.freeze_support()
     try:
         config = build_config()
         process_images(config)
@@ -381,3 +383,4 @@ if __name__ == "__main__":
     # Only pause for Enter when running interactively (e.g. no --no-interactive flag)
     if '--no-interactive' not in sys.argv:
         input("\nProcessing complete. Press Enter to exit...")
+
