@@ -32,3 +32,158 @@ jobs:
       - name: Run Unit Tests
         run: |
           python -m unittest tests/test_watermark.py
+
+  auto-tag:
+    name: Auto-Tag Version
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      new_tag: ${{ steps.bump.outputs.new_tag }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine Version Bump
+        id: bump
+        run: |
+          # Get the latest semver tag
+          LATEST_TAG=$(git tag --sort=-v:refname | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' | head -n1)
+          if [ -z "$LATEST_TAG" ]; then
+            LATEST_TAG="v0.0.0"
+          fi
+
+          # Strip leading 'v' if present
+          VERSION="${LATEST_TAG#v}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+
+          # Check commit messages since last tag for bump keywords
+          if git log "${LATEST_TAG}..HEAD" --pretty=%B 2>/dev/null | grep -qi '#major'; then
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+            echo "Bump type: MAJOR"
+          elif git log "${LATEST_TAG}..HEAD" --pretty=%B 2>/dev/null | grep -qi '#minor'; then
+            MINOR=$((MINOR + 1))
+            PATCH=0
+            echo "Bump type: MINOR"
+          else
+            PATCH=$((PATCH + 1))
+            echo "Bump type: PATCH"
+          fi
+
+          NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
+          echo "Previous tag: ${LATEST_TAG}"
+          echo "New tag: ${NEW_TAG}"
+          echo "new_tag=${NEW_TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Create and Push Tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ steps.bump.outputs.new_tag }}
+          git push origin ${{ steps.bump.outputs.new_tag }}
+
+  build-windows:
+    name: Build Windows EXE
+    needs: auto-tag
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Compile Executable
+        run: |
+          python -m PyInstaller --onefile watermark_script.py
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: dist/watermark_script.exe
+
+  build-mac:
+    name: Build macOS App
+    needs: auto-tag
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Compile Executable
+        run: |
+          python -m PyInstaller --onefile watermark_script.py
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-binary
+          path: dist/watermark_script
+
+  create-release:
+    name: Create GitHub Release
+    needs: [auto-tag, build-windows, build-mac]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download Windows EXE
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-exe
+          path: windows-release
+
+      - name: Download macOS Binary
+        uses: actions/download-artifact@v4
+        with:
+          name: mac-binary
+          path: mac-release
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            windows-release/watermark_script.exe
+            mac-release/watermark_script
+          tag_name: ${{ needs.auto-tag.outputs.new_tag }}
+          name: Release ${{ needs.auto-tag.outputs.new_tag }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
