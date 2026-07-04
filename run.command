@@ -21,7 +21,7 @@ fi
 
 # Check and install dependencies
 echo "Checking dependencies..."
-python3 -c "import PIL, rawpy, numpy" &> /dev/null
+python3 -c "import PIL; import rawpy; import numpy" &> /dev/null
 if [ $? -ne 0 ]; then
     echo "Missing required libraries. Installing pillow, rawpy, numpy..."
     python3 -m pip install pillow rawpy numpy
