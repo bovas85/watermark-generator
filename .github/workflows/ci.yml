@@ -69,6 +69,7 @@ jobs:
       contents: write
     outputs:
       new_tag: ${{ steps.bump.outputs.new_tag }}
+      changelog: ${{ steps.bump.outputs.changelog }}
 
     steps:
       - name: Checkout Code
@@ -116,6 +117,16 @@ jobs:
           echo "Previous tag: ${LATEST_TAG}"
           echo "New tag: ${NEW_TAG}"
           echo "new_tag=${NEW_TAG}" >> "$GITHUB_OUTPUT"
+
+          # Generate changelog
+          echo "changelog<<EOF" >> "$GITHUB_OUTPUT"
+          if [ "$LATEST_TAG" = "v0.0.0" ]; then
+            git log --pretty=format:"* %s (%h)" >> "$GITHUB_OUTPUT"
+          else
+            git log "${LATEST_TAG}..HEAD" --pretty=format:"* %s (%h)" >> "$GITHUB_OUTPUT"
+          fi
+          echo "" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Create and Push Tag
         run: |
@@ -217,8 +228,11 @@ jobs:
             mac-release/watermark_script
           tag_name: ${{ needs.auto-tag.outputs.new_tag }}
           name: Release ${{ needs.auto-tag.outputs.new_tag }}
+          body: |
+            ### Commits in this Release:
+            ${{ needs.auto-tag.outputs.changelog }}
           draft: false
           prerelease: false
-          generate_release_notes: true
+          generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
